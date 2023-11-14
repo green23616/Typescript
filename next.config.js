@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  // env: {
+  // NEXT_PUBLIC_DATBASE_HOST : process.env.NEXT_PUBLIC_DATBASE_HOST,
+  // }
+}
 
 module.exports = nextConfig

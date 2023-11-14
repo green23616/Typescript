@@ -1,17 +1,21 @@
 'use client'
+import Comment from "@/app/components/comment";
+import { useCustomSession } from "@/app/sessions";
+import Link from "next/link";
 import { useParams } from "next/navigation"
 import React, { useEffect, useState } from 'react'
 interface PostList{
   id: number;
   title: string;
   content: string;
-  author: string;
+  userid: string;
+  username: string;
   date: string;
   count: number;
 }
 
 export default function Detail(){
-
+  const {data: session} = useCustomSession();
   const params = useParams();
   // console.log(params)
   // post/[id]로 쓰는게 국룰
@@ -63,18 +67,28 @@ export default function Detail(){
       {
         post.length > 0 && (
           <>
-          <div className="">
+          <div>
             <div className="">
-              <p className="">작성자 : {post && post[0]?.author}</p>
+              <p className="">작성자 : {post && post[0]?.username}</p>
               <p className="">제목 : {post && post[0]?.title}</p>
               <p className="">내용 : {post && post[0]?.content}</p>
             </div>
+            {
+              session ? <Comment id={post && post[0]?.id}/> : <p className="block border p-4 text-center my-5 rounded-md"><Link href="/login">로그인 후 댓글 작성이 가능합니다</Link></p>
+            }
           </div>
           </>
         )
       }
-      <button className="text-black mr-2 p-2 bg-blue-500 rounded mt-5">수정</button>  
-      <button className='text-black p-2 bg-yellow-500 rounded' onClick={()=>deletePost(post[0].id)}>삭제</button>
+      {
+        session && session.user && (
+          (post && post[0] && session.user.email === post[0].userid) || session.user.level === 10
+        ) &&
+        <>
+        <button className="text-black mr-2 p-2 bg-blue-500 rounded mt-5">수정</button>  
+        <button className='text-black p-2 bg-yellow-500 rounded' onClick={()=>deletePost(post[0].id)}>삭제</button>
+        </>
+      }
       </div>
     </div>
     
