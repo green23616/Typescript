@@ -25,14 +25,12 @@ export default async function Home() {
       password: process.env.DATABASE_PASSWORD
     }
     const conn = connect(config)
-    const result = await conn.execute('select 1 from dual where 1=?', [1])  
   
-    const [results] = await db.query<RowDataPacket[]>('select * from jaewan.board order by date desc limit ? offset ?',[perPage, offset]);
+    const [result] = await db.query<RowDataPacket[]>('select * from jaewan.board order by date desc limit ? offset ?',[perPage, offset]);
     // offset > 10개 건너뜀. 페이지를 바꾼다는 개념.
     //  desc/asc 오름차순/내림차순
-    const [countResult] = await db.query<RowDataPacket[]>('select count(*) as cnt from sakila.film')
-    const totalCnt = countResult[0].cnt
-    console.log(results)
+
+    console.log(result)
   
     let sessions = await getServerSession(authOptions) as userInfo;
     
@@ -54,7 +52,7 @@ export default async function Home() {
             <li className="px-6 basis-1/6 py-3 text-center">작성일</li>
           </ul>
           {
-            results && results.map((e,i)=>{
+            result && result.map((e,i)=>{
               
               const date = new Date(e.date);
               const year = date.getFullYear();
@@ -64,7 +62,7 @@ export default async function Home() {
               
               return(
                 <ul key={i} className='flex justify-between'>
-                  <li className="px-6 basis-1/6 py-3 text-center">{results.length - i}</li>
+                  <li className="px-6 basis-1/6 py-3 text-center">{result.length - i}</li>
                   <li className="px-6 basis-1/2 py-3 text-center"><Link href={`/post/${e.id}`}>{e.title}</Link></li>
                   <li className="px-6 basis-1/6 py-3 text-center">{e.author}</li>
                   <li className="px-6 basis-1/6 py-3 text-center">{formatDate}</li>
