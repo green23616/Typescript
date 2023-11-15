@@ -21,7 +21,7 @@ const config = {
   password: process.env.DATABASE_PASSWORD
 }
 const conn = connect(config)
-const results = await conn.execute('select 1 from dual where 1=?', [1])
+const results = conn.execute('select 1 from dual where 1=?', [1])
 
 export default async function Home() {
     const page = 1;
