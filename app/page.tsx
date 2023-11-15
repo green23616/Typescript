@@ -15,19 +15,17 @@ interface userInfo{
   }
 }
 
-const config = {
-  host: process.env.DATABASE_HOST,
-  username: process.env.DATABASE_USERNAME,
-  password: process.env.DATABASE_PASSWORD
-}
-const conn = connect(config)
-const results = conn.execute('select 1 from dual where 1=?', [1])
-
 export default async function Home() {
     const page = 1;
     const perPage = 5;
     const offset = (page - 1) * perPage;
-  
+    const config = {
+      host: process.env.DATABASE_HOST,
+      username: process.env.DATABASE_USERNAME,
+      password: process.env.DATABASE_PASSWORD
+    }
+    const conn = connect(config)
+    const result = await conn.execute('select 1 from dual where 1=?', [1])  
   
     const [results] = await db.query<RowDataPacket[]>('select * from jaewan.board order by date desc limit ? offset ?',[perPage, offset]);
     // offset > 10개 건너뜀. 페이지를 바꾼다는 개념.
