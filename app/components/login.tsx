@@ -29,7 +29,7 @@ export default async function Login(){
       sessions && sessions.user
       ? <>
         <span className='mr-5'>{sessions && sessions.user?.name}님 반갑습니다</span>
-        <Link href="/logout">로그아웃</Link>
+        {/* <Link href="/logout">로그아웃</Link> */}
         </>
       : <div className="w-full border-b p-4">
         <div className="max-w-7xl mx-auto flex justify-between font-bold">
