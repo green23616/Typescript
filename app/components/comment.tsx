@@ -9,33 +9,71 @@ const data = {
 ex) data.id를 변수로 저장을 따로 하고 싶다면 const {id} = data > const id = 5가 남음
 */
 'use client'
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCustomSession } from "../sessions"
+import { useParams } from "next/navigation";
 
 interface CommentProps{
   id: number;
 }
+interface formType{
+  parentid: number;
+  userid: string;
+  username: string;
+  content: string;
+}
+interface CommentType{
+  id: number;
+  parentid: number;
+  userid: string;
+  username: string;
+  content: string;
+  date: string;
+}
 
 export default function Comment(props: CommentProps){
   const {id} = props;
-  const [comment, setComment] = useState<string>('');
-  const commentValue = (e: React.ChangeEvent<HTMLInputElement>)=> {
-    setComment(e.target.value);
-  }
   const {data: session} = useCustomSession();
+  const [formData, setFormData] = useState<formType>({
+    parentid: id,
+    userid: session?.user?.email ?? '',
+    username: session?.user?.name ?? '',
+    content: ''
+  })
+  const commentValue = (e: React.ChangeEvent<HTMLInputElement>)=> {
+    setFormData({...formData, [e.target.name] : e.target.value})
+    console.log(formData)
+  }
+  const [totalComment, setTotalComment] = useState<CommentType[]>();
+
+  const params = useParams();
+  // console.log(params)
+  useEffect(()=>{
+    const fetchData= async ()=>{
+      const res = await fetch(`/api/comment?id=${params.id}`)
+      const data = await res.json();
+      setTotalComment(data.data);
+    }
+    fetchData()
+  },[params.id])
+
   const cmtSubmit = async () =>{
     try{
-      const res = await fetch('',{
+      const res = await fetch('/api/comment',{
         method : "POST",
         headers: {
           'Content-Type' : 'application/json'
         },
-        body: JSON.stringify(comment)
+        body: JSON.stringify(formData)
       })
+      if(res.ok){
+        const data = await res.json();
+        // console.log(data)
+        setTotalComment(data.data)
+      }
     }catch(error){
       console.log(error)
     }
-
   }
   return (
     <>
@@ -43,9 +81,25 @@ export default function Comment(props: CommentProps){
       session && session.user &&
       <>
       <p>댓글목록</p>
-      <p>{comment}</p>
-      <input type="text" className="border-blue-300 p-3 rounded" onChange={commentValue}/>
-      <button className="" onClick={cmtSubmit}>확인</button>
+      {
+        totalComment && totalComment.map((e,i)=>{
+            const date = new Date(e.date);
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const hours = (date.getHours()+9).toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const seconds = date.getSeconds().toString().padStart(2, '0');
+            const formatDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+          return(
+            <>
+            <p key={i}>{e.content}{formatDate}</p>
+            </>
+          )
+        })
+      }
+      <input type="text" name="content" className="border-blue-500 p-3 rounded" onChange={commentValue}/>
+      <button onClick={cmtSubmit}>확인</button>
       </>
     }
     </>

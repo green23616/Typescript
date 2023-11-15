@@ -1,43 +1,39 @@
-'use client'
-
 interface userInfo{
-  name: string;
-  email: string;
-  image: string;
+  user:{
+    name: string;
+    email?: string;
+    image?: string;
+    level?: number;
+  }
 }
 
+import { getServerSession } from 'next-auth';
 import { signOut } from 'next-auth/react'
 import Link from "next/link";
-import { useCustomSession } from '../sessions';
+import { authOptions } from '../api/auth/[...nextauth]/route';
 
-export default function Login(){
-  const {data: session, status} = useCustomSession();
+export default async function Login(){
+  let sessions = await getServerSession(authOptions) as userInfo;
   const redirectTo = () =>{
     sessionStorage.setItem('preUrl', window.location.href);
     window.location.href = "/login"
   }
   return(
     <>
-    
-    {/* {
-      session && session.user?.email
-      ? <button onClick={()=>{signOut()}} className='mr-5'>로그아웃</button>
-      : <button onClick={()=>{signIn()}} className='mr-5'>로그인</button>
-    } */}
     {
-      session && session.user.level === 10
+      sessions && sessions.user.level === 10
       ? '관리자'
-      : session && session.user !== null &&'일반회원'
+      : sessions && sessions.user !== null &&'일반회원'
     } 
     {
-      status !== 'loading' && session && session.user?.email
+      sessions && sessions.user
       ? <>
-        <span className='mr-5'>{session && session.user?.name}님 반갑습니다</span>
-        <button onClick={()=>signOut()}>로그아웃</button>
+        <span className='mr-5'>{sessions && sessions.user?.name}님 반갑습니다</span>
+        <Link href="/logout">로그아웃</Link>
         </>
       : <div className="w-full border-b p-4">
         <div className="max-w-7xl mx-auto flex justify-between font-bold">
-          <button onClick={redirectTo}>Login</button>
+          <Link href="/login">로그인</Link>
           <Link href="/register">회원가입</Link>
           {/* <button onClick={()=>{signIn('kakao')}}>Kakao</button>
           <button onClick={()=>{signIn('google')}}>Google</button>
