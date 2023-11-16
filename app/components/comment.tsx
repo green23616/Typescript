@@ -40,6 +40,14 @@ export default function Comment(props: CommentProps){
     username: session?.user?.name ?? '',
     content: ''
   })
+  useEffect(()=>{
+    setFormData({
+      parentid: id,
+      userid: session?.user?.email ?? '',
+      username: session?.user?.name ?? '',
+      content: ''
+    })
+  },[session?.user.name, session?.user.email, id])
   const commentValue = (e: React.ChangeEvent<HTMLInputElement>)=> {
     setFormData({...formData, [e.target.name] : e.target.value})
     console.log(formData)
