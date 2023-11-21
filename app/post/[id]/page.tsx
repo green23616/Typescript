@@ -1,158 +1,92 @@
-'use client'
-import Comment from "@/app/components/comment";
-import { useCustomSession } from "@/app/sessions";
-import Link from "next/link";
-import { useParams } from "next/navigation"
-import React, { useEffect, useState } from 'react'
-interface PostList{
-  id: number;
-  title: string;
-  content: string;
-  userid: string;
-  username: string;
-  date: string;
-  count: number;
+import db from '@/db';
+import { RowDataPacket } from 'mysql2';
+import Link from 'next/link';
+import Comment from '@/app/components/comment';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import EditDelte from './editDelete';
+interface userInfo{
+  user:{
+    name: string;
+    email?: string;
+    image?: string;
+    level?: number;
+  }
+}
+interface propsType{
+  results: {
+    id: number;
+    userid: string;
+    title?: string;
+    content?: string;
+    username?: string;
+    count?: number;
+    date?: string;    
+  }
 }
 
-export default function Detail(){
-  const {data: session} = useCustomSession();
-  const params = useParams();
-  // console.log(params)
-  // post/[id]로 쓰는게 국룰
-  const [post, setPost] = useState<PostList[]>([]);
-//  state안쓰고 변수에 넣어도 됨. 계속 렌더링되는게 아니기 때문.
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const deletePost = async (e: number)=> {
-    try{
-      const res = await fetch(`/api/delete`, {
-        method: "POST",
-        headers: {
-          'Content-Type' : 'application/json'
-        },
-        body: JSON.stringify({id: e})
-      });
-      console.log(e)
-      if(res.ok){
-        const data = await res.json();
-        console.log(data.message)
-        alert('정상적으로 삭제되었습니다.');
-        window.location.href="/";
-      }else{
-        const errorData = await res.json();
-        console.log(errorData.error)
-      }
-    }catch(error){
-      console.log(error)
-    }
-  } 
+async function Getip(){
+  const res = await fetch('http://localhost:3000/api/get-ip');
+  // vercel배포는 주소 변경
+  const data = res.json();
+  if(!res.ok){
+    alert("에러가 발생하였습니다.");
+    return;
+  }
+  return data;
+}
 
-  useEffect(()=>{
-    const fetchData = async () =>{
-      // 배열의 마지막 값을 가지고 오는 방법 pop
-      const res = await fetch(`/api/post/${params.id}`)
-      const data = await res.json();
-      // console.log(data)
-      setPost(data.data)
-      setIsLoading(false)
+export default async function Detail({
+  params
+}: {
+  params?: {id?: number}
+}){
+  const getIp = await Getip();
+  const userIp = getIp.data;
+  const postId = params?.id !== undefined ? params.id : 1;
+  const [results] = await db.query<RowDataPacket[]>('select * from jaewan.board where id = ?', [postId])
+  const post = results && results[0] 
+  let session = await getServerSession(authOptions) as userInfo;
+  const [countResult] = await db.query<RowDataPacket[]>('select count (*) as cnt from jaewan.view_log where postid = ? and ip_address = ?',[postId, userIp]);
+  const totalCnt = countResult[0].cnt;
+  // console.log(totalCnt + "개")
+  if(results.length > 0){
+
+    
+    if(totalCnt === 0){
+      await db.query<RowDataPacket[]>('update jaewan.board set count = count + 1 where id = ?', [postId])
     }
-    fetchData();
-  },[params.id])
+    await db.query<RowDataPacket[]>('insert into jaewan.view_log(postid, ip_address, view_date) select ?, ?, NOW() where not exists (select 1 from jaewan.view_log where postid = ? and ip_address = ? and view_date > now() - interval 24 hour)', [postId, userIp, postId, userIp])
+    //select 1 > 존재 여부를 확인하기 위해 사용 > 1은 상수로 실제 데이터는 중요하지 않으며 존재 여부를 확인하기 위함
+    //내가 원하는 테이블에서 어떠한 조건 즉 and까지 포함한 3가지 조건을 모두 충족하는 조건을 찾는다.
+    //어떠한 행도 반환하지 않을 때만 참이 된다. 즉 3가지 조건이 모두 참 혹은 데이터가 없을때 쿼리가 실행.
+  }
 
   return(
     <>   
-    {isLoading && <Loading/>}
     <div className="flex bg-slate-300 m-20 p-4 border rounded-xl max-w-[500px] mx-auto">
       <div className="mx-auto">
-      
       {
-        post.length > 0 && (
+        results.length > 0 && (
           <>
           <div>
             <div className="">
-              <p className="">작성자 : {post && post[0]?.username}</p>
-              <p className="">제목 : {post && post[0]?.title}</p>
-              <p className="">내용 : {post && post[0]?.content}</p>
+              <p className="">작성자 : {post?.username}</p>
+              <p className="">제목 : {post?.title}</p>
+              <p className="">내용 : {post?.content}</p>
+              <p>조회수 : {post?.count}</p>
             </div>
             {
-              session ? <Comment id={post && post[0]?.id}/> : <p className="block border p-4 text-center my-5 rounded-md"><Link href="/login">로그인 후 댓글 작성이 가능합니다</Link></p>
+              session ? <Comment id={post?.id}/> : <p className="block border p-4 text-center my-5 rounded-md"><Link href="/login">로그인 후 댓글 작성이 가능합니다</Link></p>
             }
           </div>
           </>
         )
       }
-      {
-        session && session.user && (
-          (post && post[0] && session.user.email === post[0].userid) || session.user.level === 10
-        ) &&
-        <>
-        <button className="text-black mr-2 p-2 bg-blue-500 rounded mt-5">수정</button>  
-        <button className='text-black p-2 bg-yellow-500 rounded' onClick={()=>deletePost(post[0].id)}>삭제</button>
-        </>
-      }
+      <EditDelte results={post as propsType['results']}/>
       </div>
     </div>
     
     </>    
   )
-}
-
-function Loading(){
-  return(
-  <div className="w-full h-full bg-black/50 top-0 left-0 z-50">
-      <div className="absolute left-2/4 top-2/4 -translate-x-2/4 -translate-y-2/4">
-        <svg width="200px" height="200px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
-          <g transform="rotate(0 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.9166666666666666s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(30 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.8333333333333334s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(60 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.75s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(90 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.6666666666666666s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(120 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.5833333333333334s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(150 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.5s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(180 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.4166666666666667s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(210 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.3333333333333333s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(240 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.25s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(270 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.16666666666666666s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(300 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.08333333333333333s" repeatCount="indefinite"></animate>
-            </rect>
-          </g><g transform="rotate(330 50 50)">
-            <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill={`#87ceeb`}>
-              <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="0s" repeatCount="indefinite"></animate>
-            </rect>
-          </g>
-        </svg>
-      </div>
-    </div>
-)
-
 }

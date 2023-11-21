@@ -9,7 +9,7 @@ const data = {
 ex) data.id를 변수로 저장을 따로 하고 싶다면 const {id} = data > const id = 5가 남음
 */
 'use client'
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useCustomSession } from "../sessions"
 import { useParams } from "next/navigation";
 
@@ -50,7 +50,7 @@ export default function Comment(props: CommentProps){
   },[session?.user.name, session?.user.email, id])
   const commentValue = (e: React.ChangeEvent<HTMLInputElement>)=> {
     setFormData({...formData, [e.target.name] : e.target.value})
-    console.log(formData)
+    // console.log(formData)
   }
   const [totalComment, setTotalComment] = useState<CommentType[]>();
 
@@ -100,9 +100,9 @@ export default function Comment(props: CommentProps){
             const seconds = date.getSeconds().toString().padStart(2, '0');
             const formatDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
           return(
-            <>
-            <p key={i}>{e.content}{formatDate}</p>
-            </>
+            <React.Fragment key={i}>
+            <p>{e.content}{formatDate}</p>
+            </React.Fragment>
           )
         })
       }

@@ -1,6 +1,7 @@
 'use client';
-import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
+import Search from './search';
+
 interface PostList{
   id: number;
   title: string;
@@ -45,8 +46,8 @@ export default function Post(){
 
   return(
     <>
+    
     <div className="flex justify-center gap-x-5 m-5 bg-white">
-      {/* {page > 1 && <button className="" onClick={()=>setPage(page - 1)}>이전</button>} */}
       {page > 5 && <button className="border px-1.5 py-1 rounded text-sm" onClick={()=>{setPage(page - 5);prevPage}}>이전</button>}
       {
         Array(endPage - startPage + 1).fill(null).map((_,i)=>{
@@ -56,8 +57,8 @@ export default function Post(){
           )
         })
       }
-      {/* {page < lastPage && <button onClick={()=>setPage(page + 1)}>다음</button>} */}
-      {page < lastPage && <button className='border px-1.5 py-1 rounded text-sm' onClick={()=>{setPage(page + 5);nextPage}}>다음</button>}
+      {page <= lastPage && <button className='border px-1.5 py-1 rounded text-sm' onClick={()=>{setPage(page + 5);nextPage}}>다음</button>}
+    
     </div>
     </>
   )

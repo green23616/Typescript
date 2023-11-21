@@ -5,15 +5,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useCustomSession } from '../sessions';
 
-interface userInfo{
-    user:{
-        name:string;
-        email:any;
-        password: string;
-        level: number
-    }
-}
-
 export default function LoginPage() {
 
     const [email, setEmail] = useState<string>('');
